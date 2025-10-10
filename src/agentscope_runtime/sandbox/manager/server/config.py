@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+from tokenize import OP
 from typing import Optional, Tuple, Literal
 from pydantic_settings import BaseSettings
 from pydantic import field_validator, ConfigDict
@@ -20,6 +21,7 @@ class Settings(BaseSettings):
     DEFAULT_SANDBOX_TYPE: str = "base"
     POOL_SIZE: int = 1
     AUTO_CLEANUP: bool = True
+    NETWORK: Optional[str] = None
     CONTAINER_PREFIX_KEY: str = "runtime_sandbox_container_"
     CONTAINER_DEPLOYMENT: Literal["docker", "cloud", "k8s"] = "docker"
     DEFAULT_MOUNT_DIR: str = "sessions_mount_dir"
@@ -44,7 +46,9 @@ class Settings(BaseSettings):
     OSS_BUCKET_NAME: str = "your-bucket-name"
 
     # S3 settings
-    S3_ENDPOINT_URL: Optional[str] = None  # your-endpoint-url, like http://localhost:9000
+    S3_ENDPOINT_URL: Optional[str] = (
+        None  # your-endpoint-url, like http://localhost:9000
+    )
     S3_ACCESS_KEY_ID: str = "your-access-key-id"
     S3_ACCESS_KEY_SECRET: str = "your-access-key-secret"
     S3_BUCKET_NAME: str = "your-bucket-name"

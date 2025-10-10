@@ -130,6 +130,7 @@ def get_config() -> SandboxManagerEnvConfig:
             container_prefix_key=settings.CONTAINER_PREFIX_KEY,
             file_system=settings.FILE_SYSTEM,
             redis_enabled=settings.REDIS_ENABLED,
+            network=settings.NETWORK,
             container_deployment=settings.CONTAINER_DEPLOYMENT,
             default_mount_dir=settings.DEFAULT_MOUNT_DIR,
             storage_folder=settings.STORAGE_FOLDER,
