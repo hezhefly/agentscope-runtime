@@ -4,7 +4,7 @@ import asyncio
 import inspect
 import logging
 
-from typing import Optional
+from typing import Optional, Callable
 
 import websockets
 from fastapi import FastAPI, HTTPException, Request, Depends
@@ -12,6 +12,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from ...manager.server.config import get_settings
 from ...manager.server.models import (
@@ -25,6 +26,76 @@ from ....version import __version__
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class UploadTriggerMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to automatically trigger uploads after specific endpoints are called.
+    This middleware intercepts responses and triggers uploads for code execution endpoints.
+    """
+
+    # List of endpoints that should trigger uploads after execution
+    UPLOAD_TRIGGER_ENDPOINTS = {
+        "/call_tool": "POST"
+    }
+
+    async def dispatch(self, request: Request, call_next: Callable):
+        # Check if this is an endpoint that should trigger an upload
+        # We need to check this before calling call_next to be able to read the body
+        should_trigger_upload = (request.url.path in self.UPLOAD_TRIGGER_ENDPOINTS and
+                                 request.method == self.UPLOAD_TRIGGER_ENDPOINTS[request.url.path])
+
+        identity = None
+        if should_trigger_upload:
+            try:
+                # Extract identity from the request body
+                body = await request.body()
+                if body:
+                    import json
+                    try:
+                        data = json.loads(body.decode())
+                        identity = data.get('identity')
+                    except json.JSONDecodeError:
+                        logger.error("Failed to decode JSON body")
+
+                # Create a new request with the same body for the next middleware/handler
+                async def receive() -> dict:
+                    return {"type": "http.request", "body": body, "more_body": False}
+
+                request = Request(request.scope, receive=receive)
+            except Exception as e:
+                logger.error(f"Error extracting identity from request: {e}")
+
+        # Process the request
+        response = await call_next(request)
+
+        # 打印request的所有请求参数
+        logger.info(f"Response status code: {request.url.path}")
+        logger.info(f"Response body: {request.method}")
+
+        # Trigger upload after the request is processed
+        if should_trigger_upload and identity:
+            logger.debug(f"Upload trigger endpoint hit: {request.url.path}")
+            try:
+                # Trigger upload in background task
+                asyncio.create_task(self._trigger_upload_async(identity))
+            except Exception as e:
+                logger.error(f"Error setting up upload trigger: {e}")
+
+        return response
+
+    async def _trigger_upload_async(self, container_id: str):
+        """
+        Trigger upload asynchronously without blocking the response.
+        """
+        try:
+            sandbox_manager = get_sandbox_manager()
+            logger.debug(f"Triggering upload for container {container_id}")
+            result = sandbox_manager.upload_on_completion(container_id)
+            logger.info(f"Upload triggered for container {container_id}, result: {result}")
+        except Exception as e:
+            logger.error(f"Error triggering upload for container {container_id}: {e}")
+
 
 # Create FastAPI app
 app = FastAPI(
@@ -41,7 +112,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+app.add_middleware(UploadTriggerMiddleware)
 # Security scheme
 security = HTTPBearer(auto_error=False)
 
@@ -87,7 +158,7 @@ def get_config() -> SandboxManagerEnvConfig:
 
 
 def verify_token(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+        credentials: HTTPAuthorizationCredentials = Depends(security),
 ):
     """Verify Bearer token"""
     settings = get_settings()
@@ -131,8 +202,8 @@ def get_sandbox_manager():
 
 def create_endpoint(method):
     async def endpoint(
-        request: Request,
-        token: HTTPAuthorizationCredentials = Depends(verify_token),
+            request: Request,
+            token: HTTPAuthorizationCredentials = Depends(verify_token),
     ):
         try:
             data = await request.json()
@@ -156,8 +227,8 @@ def create_endpoint(method):
 
 def register_routes(_app, instance):
     for _, method in inspect.getmembers(
-        instance,
-        predicate=inspect.ismethod,
+            instance,
+            predicate=inspect.ismethod,
     ):
         if getattr(method, "_is_remote_wrapper", False):
             http_method = method._http_method.lower()
@@ -205,8 +276,8 @@ async def health_check():
 
 @app.websocket("/browser/{sandbox_id}/cast")
 async def websocket_endpoint(
-    websocket: WebSocket,
-    sandbox_id: str,
+        websocket: WebSocket,
+        sandbox_id: str,
 ):
     global _sandbox_manager
 
