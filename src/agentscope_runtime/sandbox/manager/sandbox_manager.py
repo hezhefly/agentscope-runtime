@@ -119,9 +119,7 @@ class SandboxManager:
         self.pool_size = self.config.pool_size
         self.prefix = self.config.container_prefix_key
         self.default_mount_dir = self.config.default_mount_dir
-        self.storage_folder = (
-            self.config.storage_folder or self.default_mount_dir
-        )
+        self.storage_folder = self.config.storage_folder or self.default_mount_dir
 
         if self.config.redis_enabled:
             import redis
@@ -172,6 +170,7 @@ class SandboxManager:
             )
         elif self.file_system == "s3":
             from .storage.s3_storage import S3Storage
+
             self.storage = S3Storage(
                 self.config.s3_access_key_id,
                 self.config.s3_access_key_secret,
@@ -341,15 +340,11 @@ class SandboxManager:
 
                 container_model = ContainerModel(**container_json)
                 logger.debug(
-                    f"Retrieved container from pool:"
-                    f" {container_model.session_id}",
+                    f"Retrieved container from pool:" f" {container_model.session_id}",
                 )
 
-                if (
-                    container_model.version
-                    != SandboxRegistry.get_image_by_type(
-                        self.default_type,
-                    )
+                if container_model.version != SandboxRegistry.get_image_by_type(
+                    self.default_type,
                 ):
                     logger.warning(
                         f"Container {container_model.session_id} outdated, "
@@ -365,10 +360,7 @@ class SandboxManager:
                     )
                     continue
 
-                if (
-                    self.client.get_status(container_model.container_id)
-                    == "running"
-                ):
+                if self.client.get_status(container_model.container_id) == "running":
                     return container_model.container_name
                 else:
                     logger.error(
@@ -401,8 +393,7 @@ class SandboxManager:
         image = SandboxRegistry.get_image_by_type(target_sandbox_type)
         if not image:
             logger.warning(
-                f"No image found for sandbox {target_sandbox_type}, "
-                f"using default",
+                f"No image found for sandbox {target_sandbox_type}, " f"using default",
             )
             image = SandboxRegistry.get_image_by_type(
                 self.default_type,
@@ -497,8 +488,7 @@ class SandboxManager:
                 container_id=_id,
                 container_name=container_name,
                 base_url=f"http://{ip}:{ports[0]}/fastapi",
-                browser_url=f"http://{ip}:{ports[0]}/steel-api"
-                f"/{runtime_token}",
+                browser_url=f"http://{ip}:{ports[0]}/steel-api" f"/{runtime_token}",
                 front_browser_ws=f"ws://{ip}:"
                 f"{ports[0]}/steel-api/"
                 f"{runtime_token}/v1/sessions/cast",
@@ -560,8 +550,53 @@ class SandboxManager:
             return True
         except Exception as e:
             logger.error(
-                f"Failed to destroy container: {e}: "
-                f"{traceback.format_exc()}",
+                f"Failed to destroy container: {e}: " f"{traceback.format_exc()}",
+            )
+            return False
+
+    @remote_wrapper()
+    def upload_on_completion(self, identity):
+        """
+        Upload container data to storage without releasing the container.
+        This method is called when agent execution completes.
+        """
+        try:
+            container_json = self.get_info(identity)
+
+            if not container_json:
+                logger.warning(
+                    f"No container found for {identity}.",
+                )
+                return False
+
+            container_info = ContainerModel(**container_json)
+
+            # Upload to storage without releasing container
+            if container_info.mount_dir and container_info.storage_path:
+                # Check if mount directory exists
+                if not os.path.exists(container_info.mount_dir):
+                    logger.warning(
+                        f"Mount directory does not exist for container {identity}: "
+                        f"{container_info.mount_dir}"
+                    )
+                    return False
+
+                logger.info(f"Uploading data for container {identity}")
+                self.storage.upload_folder(
+                    container_info.mount_dir,
+                    container_info.storage_path,
+                )
+                logger.info(f"Upload completed for container {identity}")
+                return True
+            else:
+                logger.warning(
+                    f"No mount_dir or storage_path for container {identity}, "
+                    f"skipping upload."
+                )
+                return False
+        except Exception as e:
+            logger.error(
+                f"Failed to upload container data: {e}: " f"{traceback.format_exc()}",
             )
             return False
 
@@ -592,8 +627,7 @@ class SandboxManager:
 
         except Exception as e:
             logger.error(
-                f"Failed to start container: {e}:"
-                f" {traceback.format_exc()}",
+                f"Failed to start container: {e}:" f" {traceback.format_exc()}",
             )
             return False
 
