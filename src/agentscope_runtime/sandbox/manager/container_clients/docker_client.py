@@ -10,7 +10,6 @@ import docker
 from .base_client import BaseClient
 from ..collections import RedisSetCollection, InMemorySetCollection
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -243,18 +242,18 @@ class DockerClient(BaseClient):
             return False
 
     def create(
-        self,
-        image,
-        name=None,
-        ports=None,
-        volumes=None,
-        environment=None,
-        runtime_config=None,
+            self,
+            image,
+            name=None,
+            ports=None,
+            volumes=None,
+            environment=None,
+            runtime_config=None,
     ):
         """Create a new Docker container."""
+
         if runtime_config is None:
             runtime_config = {}
-
         port_mapping = {}
 
         if ports:
@@ -302,6 +301,7 @@ class DockerClient(BaseClient):
                 logger.error(f"Error occurred while checking the image: {e}")
                 return None, None, None
 
+            self.remove(name, force=True)
             # Create and run the container
             container = self.client.containers.run(
                 image,
@@ -371,6 +371,10 @@ class DockerClient(BaseClient):
                         host_port = int(mapping["HostPort"])
                         self.port_set.remove(host_port)
 
+            return True
+        except docker.errors.NotFound:
+            # 容器不存在，记录日志并返回成功（因为目标就是删除容器）
+            logger.debug(f"Container {container_id} not found, assuming it has been removed")
             return True
         except Exception as e:
             logger.error(f"An error occurred: {e}, {traceback.format_exc()}")

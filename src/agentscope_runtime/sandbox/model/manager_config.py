@@ -4,7 +4,6 @@ import os
 from typing import Optional, Literal, Tuple
 from pydantic import BaseModel, Field, model_validator
 
-
 UUID_LENGTH = 25
 
 
@@ -30,7 +29,7 @@ class SandboxManagerEnvConfig(BaseModel):
     container_deployment: Literal["docker", "cloud", "k8s"] = Field(
         ...,
         description="Container deployment backend: 'docker', 'cloud', "
-        "or 'k8s'.",
+                    "or 'k8s'.",
     )
 
     default_mount_dir: Optional[str] = Field(
@@ -47,6 +46,10 @@ class SandboxManagerEnvConfig(BaseModel):
         0,
         description="Number of containers to be kept in the pool.",
     )
+    network: str = Field(
+        "default",
+        description="Network name for container deployment.",
+    )
 
     # OSS settings
     oss_endpoint: Optional[str] = Field(
@@ -60,7 +63,7 @@ class SandboxManagerEnvConfig(BaseModel):
     oss_access_key_secret: Optional[str] = Field(
         None,
         description="Access key secret for OSS. Required if file_system is "
-        "'oss'.",
+                    "'oss'.",
     )
     oss_bucket_name: Optional[str] = Field(
         None,
@@ -97,12 +100,12 @@ class SandboxManagerEnvConfig(BaseModel):
     redis_port: Optional[int] = Field(
         6379,
         description="Port for connecting to Redis. Required if Redis is "
-        "enabled.",
+                    "enabled.",
     )
     redis_db: Optional[int] = Field(
         0,
         description="Database index to use in Redis. Required if Redis is "
-        "enabled.",
+                    "enabled.",
     )
     redis_user: Optional[str] = Field(
         None,
@@ -126,12 +129,12 @@ class SandboxManagerEnvConfig(BaseModel):
     k8s_namespace: Optional[str] = Field(
         "default",
         description="Kubernetes namespace to deploy pods. Required if "
-        "container_deployment is 'k8s'.",
+                    "container_deployment is 'k8s'.",
     )
     kubeconfig_path: Optional[str] = Field(
         None,
         description="Path to kubeconfig file. If not set, will try "
-        "in-cluster config or default kubeconfig.",
+                    "in-cluster config or default kubeconfig.",
     )
 
     @model_validator(mode="after")
@@ -147,19 +150,19 @@ class SandboxManagerEnvConfig(BaseModel):
                 self.oss_bucket_name,
             ]
             for field_name, field_value in zip(
-                [
-                    "oss_endpoint",
-                    "oss_access_key_id",
-                    "oss_access_key_secret",
-                    "oss_bucket_name",
-                ],
-                required_oss_fields,
+                    [
+                        "oss_endpoint",
+                        "oss_access_key_id",
+                        "oss_access_key_secret",
+                        "oss_bucket_name",
+                    ],
+                    required_oss_fields,
             ):
                 if not field_value:
                     raise ValueError(
                         f"{field_name} must be set when file_system is 'oss'",
                     )
-        
+
         if self.file_system == "s3":
             required_s3_fields = [
                 self.s3_access_key_id,
@@ -167,12 +170,12 @@ class SandboxManagerEnvConfig(BaseModel):
                 self.s3_bucket_name,
             ]
             for field_name, field_value in zip(
-                [
-                    "s3_access_key_id",
-                    "s3_access_key_secret",
-                    "s3_bucket_name",
-                ],
-                required_s3_fields,
+                    [
+                        "s3_access_key_id",
+                        "s3_access_key_secret",
+                        "s3_bucket_name",
+                    ],
+                    required_s3_fields,
             ):
                 if not field_value:
                     raise ValueError(
@@ -188,14 +191,14 @@ class SandboxManagerEnvConfig(BaseModel):
                 self.redis_container_pool_key,
             ]
             for field_name, field_value in zip(
-                [
-                    "redis_server",
-                    "redis_port",
-                    "redis_db",
-                    "redis_port_key",
-                    "redis_container_pool_key",
-                ],
-                required_redis_fields,
+                    [
+                        "redis_server",
+                        "redis_port",
+                        "redis_db",
+                        "redis_port_key",
+                        "redis_container_pool_key",
+                    ],
+                    required_redis_fields,
             ):
                 if field_value is None:
                     raise ValueError(

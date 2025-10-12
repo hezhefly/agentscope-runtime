@@ -401,6 +401,8 @@ class SandboxManager:
 
         # TODO: enable for timeout for the sandbox (auto cleanup)
         config = SandboxRegistry.get_config_by_type(target_sandbox_type)
+        config.runtime_config["network"] = self.config.network
+
         environment = {
             **(config.environment if config.environment else {}),
             **(environment if environment else {}),
