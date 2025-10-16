@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import sys
-sys.path.append("/Users/haibei/Documents/Projects/ichain项目/supplier_risk/opensource/agentscope-runtime/src/agentscope_runtime/sandbox/manager/storage")
 import os
 import hashlib
 import boto3
