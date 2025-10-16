@@ -70,7 +70,8 @@ class SandboxManagerEnvConfig(BaseModel):
     # S3 settings
     s3_endpoint_url: Optional[str] = Field(
         None,
-        description="S3 endpoint URL. Required if file_system is 's3'. For MinIO, use http://localhost:9000",
+        description="S3 endpoint URL. Required if file_system is 's3'. "
+        "For MinIO, use http://localhost:9000",
     )
     s3_access_key_id: Optional[str] = Field(
         None,
@@ -78,7 +79,8 @@ class SandboxManagerEnvConfig(BaseModel):
     )
     s3_access_key_secret: Optional[str] = Field(
         None,
-        description="Access key secret for S3. Required if file_system is 's3'.",
+        description="Access key secret for S3. Required if file_system "
+        "is 's3'.",
     )
     s3_bucket_name: Optional[str] = Field(
         None,
@@ -159,18 +161,20 @@ class SandboxManagerEnvConfig(BaseModel):
                     raise ValueError(
                         f"{field_name} must be set when file_system is 'oss'",
                     )
-        
+
         if self.file_system == "s3":
             required_fields = {
                 "s3_access_key_id": self.s3_access_key_id,
                 "s3_access_key_secret": self.s3_access_key_secret,
                 "s3_bucket_name": self.s3_bucket_name,
             }
-            missing_fields = [name for name, value in required_fields.items() if not value]
+            missing_fields = [
+                name for name, value in required_fields.items() if not value
+            ]
             if missing_fields:
                 raise ValueError(
-                    f"Missing required S3 configuration fields: {', '.join(missing_fields)} "
-                    f"when file_system is 's3'"
+                    f"Missing required S3 configuration fields: "
+                    f"{', '.join(missing_fields)} when file_system is 's3'",
                 )
 
         if self.redis_enabled:
