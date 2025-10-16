@@ -180,8 +180,9 @@ class LocalDeployManager(DeployManager):
         async def _get_request_info(request: Request) -> Tuple[Dict, Any, str]:
             """Extract request information from the HTTP request."""
             body = await request.body()
-            request_body = json.loads(body.decode("utf-8")) if body else {}
+            from loguru import logger
 
+            request_body = json.loads(body.decode("utf-8")) if body else {}
             user_id = request_body.get("user_id", "")
 
             if hasattr(self, "request_model") and self.request_model:
@@ -222,6 +223,7 @@ class LocalDeployManager(DeployManager):
         @app.post(self.endpoint_path)
         async def main_endpoint(request: Request):
             """Main endpoint handler for processing requests."""
+
             try:
                 (
                     _,  # query_params

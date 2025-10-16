@@ -372,10 +372,6 @@ class DockerClient(BaseClient):
                         self.port_set.remove(host_port)
 
             return True
-        except docker.errors.NotFound:
-            # 容器不存在，记录日志并返回成功（因为目标就是删除容器）
-            logger.debug(f"Container {container_id} not found, assuming it has been removed")
-            return True
         except Exception as e:
             logger.error(f"An error occurred: {e}, {traceback.format_exc()}")
             return False
