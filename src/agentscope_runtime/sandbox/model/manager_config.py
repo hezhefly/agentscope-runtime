@@ -161,23 +161,17 @@ class SandboxManagerEnvConfig(BaseModel):
                     )
         
         if self.file_system == "s3":
-            required_s3_fields = [
-                self.s3_access_key_id,
-                self.s3_access_key_secret,
-                self.s3_bucket_name,
-            ]
-            for field_name, field_value in zip(
-                [
-                    "s3_access_key_id",
-                    "s3_access_key_secret",
-                    "s3_bucket_name",
-                ],
-                required_s3_fields,
-            ):
-                if not field_value:
-                    raise ValueError(
-                        f"{field_name} must be set when file_system is 's3'",
-                    )
+            required_fields = {
+                "s3_access_key_id": self.s3_access_key_id,
+                "s3_access_key_secret": self.s3_access_key_secret,
+                "s3_bucket_name": self.s3_bucket_name,
+            }
+            missing_fields = [name for name, value in required_fields.items() if not value]
+            if missing_fields:
+                raise ValueError(
+                    f"Missing required S3 configuration fields: {', '.join(missing_fields)} "
+                    f"when file_system is 's3'"
+                )
 
         if self.redis_enabled:
             required_redis_fields = [
