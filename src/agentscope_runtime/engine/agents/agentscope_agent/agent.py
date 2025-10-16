@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-nested-blocks, too-many-branches, too-many-statements
 # pylint:disable=line-too-long, protected-access
-import inspect
+import copy
+import os
 import logging
 import json
 import threading
@@ -41,6 +42,7 @@ from .hooks import (
     clear_msg_instances,
     run_async_in_thread,
 )
+from ..utils import build_agent
 from ...agents import Agent
 from ...schemas.agent_schemas import (
     Message,
@@ -97,7 +99,11 @@ class AgentScopeContextAdapter:
             "name": message.role,
             "role": role_label,
         }
-        if message.type == MessageType.PLUGIN_CALL:
+        if message.type in (
+            MessageType.PLUGIN_CALL,
+            MessageType.FUNCTION_CALL,
+        ):
+            # convert PLUGIN_CALL, FUNCTION_CALL to ToolUseBlock
             result["content"] = [
                 ToolUseBlock(
                     type="tool_use",
@@ -106,7 +112,12 @@ class AgentScopeContextAdapter:
                     input=json.loads(message.content[0].data["arguments"]),
                 ),
             ]
-        elif message.type == MessageType.PLUGIN_CALL_OUTPUT:
+        elif message.type in (
+            MessageType.PLUGIN_CALL_OUTPUT,
+            MessageType.FUNCTION_CALL_OUTPUT,
+        ):
+            # convert PLUGIN_CALL_OUTPUT, FUNCTION_CALL_OUTPUT to
+            # ToolResultBlock
             result["content"] = [
                 ToolResultBlock(
                     type="tool_result",
@@ -152,6 +163,10 @@ class AgentScopeContextAdapter:
             )
 
         toolkit = self.attr["agent_config"].get("toolkit", Toolkit())
+        # Deepcopy to avoid modify the original toolkit
+        # TODO: when toolkit contains live sessions, deepcopy fails,
+        #  need further fixed in AgentScope
+        toolkit = copy.deepcopy(toolkit)
         tools = self.attr["tools"]
 
         # in case, tools is None and tools == []
@@ -244,37 +259,27 @@ class AgentScopeAgent(Agent):
         }
 
         builder_cls = self._attr["agent_builder"]
-        try:
-            sig = inspect.signature(
-                builder_cls.__init__,
+        self._agent = build_agent(builder_cls, params)
+
+        # Read env variable (default = false)
+        console_output_env = (
+            os.getenv(
+                "AGENTSCOPE_AGENT_CONSOLE_OUTPUT",
+                "false",
             )
-            allowed_params = set(sig.parameters.keys())
-            allowed_params.discard("self")
-        except (TypeError, ValueError):
-            allowed_params = set(params.keys())
+            .strip()
+            .lower()
+        )
 
-        filtered_params = {}
-        unsupported = []
-
-        for k, v in params.items():
-            if k in allowed_params:
-                filtered_params[k] = v
-            else:
-                unsupported.append(f"{k}={v!r}")
-
-        if unsupported:
-            unsupported_str = ", ".join(unsupported)
-            logger.warning(
-                f"The following parameters are not supported by"
-                f" {builder_cls.__name__} and have been ignored:"
-                f" {unsupported_str}. If you require these parameters, "
-                f"please update the `__init__` method of "
-                f"{builder_cls.__name__} to accept and handle them.",
+        if console_output_env not in ("true", "false"):
+            raise ValueError(
+                f"Invalid value for AGENTSCOPE_AGENT_CONSOLE_OUTPUT: "
+                f"'{console_output_env}'. "
+                f"Only 'true' or 'false' is allowed.",
             )
 
-        self._agent = builder_cls(**filtered_params)
-
-        self._agent._disable_console_output = True
+        # If true → enable output; if false → disable output
+        self._agent._disable_console_output = console_output_env == "false"
 
         self._agent.register_instance_hook(
             "pre_print",

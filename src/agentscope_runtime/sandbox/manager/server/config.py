@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-from typing import Optional, Tuple, Literal
+from typing import Optional, Tuple, Literal, Dict
 from pydantic_settings import BaseSettings
 from pydantic import field_validator, ConfigDict
 from dotenv import load_dotenv
@@ -21,8 +21,18 @@ class Settings(BaseSettings):
     POOL_SIZE: int = 1
     AUTO_CLEANUP: bool = True
     CONTAINER_PREFIX_KEY: str = "runtime_sandbox_container_"
-    CONTAINER_DEPLOYMENT: Literal["docker", "cloud", "k8s"] = "docker"
+    CONTAINER_DEPLOYMENT: Literal[
+        "docker",
+        "cloud",
+        "k8s",
+        "agentrun",
+    ] = "docker"
     DEFAULT_MOUNT_DIR: str = "sessions_mount_dir"
+    # Read-only mounts (host_path -> container_path)
+    # Example in .env:
+    # READONLY_MOUNTS={"\/opt\/shared": "\/mnt\/shared", "\/etc\/timezone":
+    # "\/etc\/timezone"}
+    READONLY_MOUNTS: Optional[Dict[str, str]] = None
     STORAGE_FOLDER: str = "runtime_sandbox_storage"
     PORT_RANGE: Tuple[int, int] = (49152, 59152)
 
@@ -53,6 +63,24 @@ class Settings(BaseSettings):
     # K8S settings
     K8S_NAMESPACE: str = "default"
     KUBECONFIG_PATH: Optional[str] = None
+
+    # AgentRun settings
+    AGENT_RUN_ACCOUNT_ID: Optional[str] = None
+    AGENT_RUN_ACCESS_KEY_ID: Optional[str] = None
+    AGENT_RUN_ACCESS_KEY_SECRET: Optional[str] = None
+    AGENT_RUN_REGION_ID: str = "cn-hangzhou"
+
+    AGENT_RUN_CPU: float = 2.0
+    AGENT_RUN_MEMORY: int = 2048
+
+    AGENT_RUN_VPC_ID: Optional[str] = None
+    AGENT_RUN_VSWITCH_IDS: Optional[list[str]] = None
+    AGENT_RUN_SECURITY_GROUP_ID: Optional[str] = None
+
+    AGENT_RUN_PREFIX: str = "agentscope-sandbox"
+
+    AGENT_RUN_LOG_PROJECT: Optional[str] = None
+    AGENT_RUN_LOG_STORE: Optional[str] = None
 
     model_config = ConfigDict(
         case_sensitive=True,

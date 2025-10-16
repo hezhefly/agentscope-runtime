@@ -20,6 +20,7 @@ from ...manager.server.models import (
 )
 from ...manager.sandbox_manager import SandboxManager
 from ...model.manager_config import SandboxManagerEnvConfig
+from ...utils import dynamic_import
 from ....version import __version__
 
 # Configure logging
@@ -61,6 +62,7 @@ def get_config() -> SandboxManagerEnvConfig:
             redis_enabled=settings.REDIS_ENABLED,
             container_deployment=settings.CONTAINER_DEPLOYMENT,
             default_mount_dir=settings.DEFAULT_MOUNT_DIR,
+            readonly_mounts=settings.READONLY_MOUNTS,
             storage_folder=settings.STORAGE_FOLDER,
             port_range=settings.PORT_RANGE,
             pool_size=settings.POOL_SIZE,
@@ -82,6 +84,18 @@ def get_config() -> SandboxManagerEnvConfig:
             s3_access_key_secret=settings.S3_ACCESS_KEY_SECRET,
             s3_bucket_name=settings.S3_BUCKET_NAME,
             s3_region_name=settings.S3_REGION_NAME,
+            agent_run_access_key_id=settings.AGENT_RUN_ACCESS_KEY_ID,
+            agent_run_access_key_secret=settings.AGENT_RUN_ACCESS_KEY_SECRET,
+            agent_run_account_id=settings.AGENT_RUN_ACCOUNT_ID,
+            agent_run_region_id=settings.AGENT_RUN_REGION_ID,
+            agent_run_cpu=settings.AGENT_RUN_CPU,
+            agent_run_memory=settings.AGENT_RUN_MEMORY,
+            agent_run_vpc_id=settings.AGENT_RUN_VPC_ID,
+            agent_run_vswitch_ids=settings.AGENT_RUN_VSWITCH_IDS,
+            agent_run_security_group_id=settings.AGENT_RUN_SECURITY_GROUP_ID,
+            agent_run_prefix=settings.AGENT_RUN_PREFIX,
+            agentrun_log_project=settings.AGENT_RUN_LOG_PROJECT,
+            agentrun_log_store=settings.AGENT_RUN_LOG_STORE,
         )
     return _config
 
@@ -316,7 +330,20 @@ def main():
         default="INFO",
         help="Set the logging level (default: INFO)",
     )
+
+    parser.add_argument(
+        "--extension",
+        action="append",
+        help="Path to a Python file or module name to load as an extension",
+    )
+
     args = parser.parse_args()
+
+    if args.extension:
+        for ext in args.extension:
+            logger.info(f"Loading extension: {ext}")
+            mod = dynamic_import(ext)
+            logger.info(f"Extension loaded: {mod.__name__}")
 
     # Setup logging based on command line argument
     setup_logging(args.log_level)
