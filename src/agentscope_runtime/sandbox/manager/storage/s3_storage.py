@@ -120,8 +120,14 @@ class S3Storage(DataStorage):
                 # Check if file exists in S3 and compare MD5
                 try:
                     response = self.s3_client.head_object(Bucket=self.bucket_name, Key=s3_file_path)
-                    # Extract ETag (MD5) from response
-                    s3_md5 = response['ETag'].strip('"')
+                    # Extract ETag from response and check if it's a plain MD5 hash
+                    etag = response['ETag'].strip('"')
+                    import re
+                    if re.fullmatch(r'[a-fA-F0-9]{32}', etag):
+                        s3_md5 = etag
+                    else:
+                        # ETag is not a plain MD5 (multipart or encrypted), force upload
+                        s3_md5 = None
                 except ClientError as e:
                     if e.response['Error']['Code'] == '404':
                         s3_md5 = None
