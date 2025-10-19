@@ -28,14 +28,12 @@ class EnvironmentManager(ServiceManager):
         tools=None,
     ) -> List:
 
-        sandboxes =  self._sandbox_service.connect(
+        return self._sandbox_service.connect(
             session_id,
             user_id,
             env_types=env_types,
             tools=tools,
         )
-        composite_key = self._sandbox_service._create_composite_key(session_id, user_id)
-        env_ids = self._sandbox_service.session_mapping.get(composite_key, [])
 
     def release_sandbox(self, session_id, user_id):
         return self._sandbox_service.release(session_id, user_id)
