@@ -91,7 +91,7 @@ class SandboxManager:
             # Initialize HTTP session for remote mode with bearer token
             # authentication
             self.http_session = requests.Session()
-            self.http_session.timeout = 30
+            self.http_session.timeout = 300
             self.base_url = base_url.rstrip("/")
             if bearer_token:
                 self.http_session.headers.update(
