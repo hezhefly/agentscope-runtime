@@ -8,5 +8,5 @@ __all__ = [
     "DataStorage",
     "LocalStorage",
     "OSSStorage",
-    "S3Storage"
+    "S3Storage",
 ]

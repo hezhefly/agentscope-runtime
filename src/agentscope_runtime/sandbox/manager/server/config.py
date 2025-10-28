@@ -56,7 +56,9 @@ class Settings(BaseSettings):
     OSS_BUCKET_NAME: str = "your-bucket-name"
 
     # S3 settings
-    S3_ENDPOINT_URL: Optional[str] = None  # your-endpoint-url, like http://localhost:9000
+    S3_ENDPOINT_URL: Optional[
+        str
+    ] = None  # your-endpoint-url, like http://localhost:9000
     S3_ACCESS_KEY_ID: str = "your-access-key-id"
     S3_ACCESS_KEY_SECRET: str = "your-access-key-secret"
     S3_BUCKET_NAME: str = "your-bucket-name"

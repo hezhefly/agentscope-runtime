@@ -196,6 +196,7 @@ class SandboxManager:
             )
         elif self.file_system == "s3":
             from .storage.s3_storage import S3Storage
+
             self.storage = S3Storage(
                 self.config.s3_access_key_id,
                 self.config.s3_access_key_secret,
