@@ -19,12 +19,19 @@
 
 [[Cookbook]](https://runtime.agentscope.io/)
 [[中文README]](README_zh.md)
+[[Samples]](https://github.com/agentscope-ai/agentscope-samples)
 
 **A Production-Ready Runtime Framework for Intelligent Agent Applications**
 
 *AgentScope Runtime tackles two critical challenges in agent development: secure sandboxed tool execution and scalable agent deployment. Built with a dual-core architecture, it provides framework-agnostic infrastructure for deploying agents with full observability and safe tool interactions.*
 
 </div>
+
+---
+
+## 🆕 NEWS
+
+* **[2025-10]**  **GUI Sandbox** is added with support for virtual desktop environments, mouse, keyboard, and screen operations.  Introduced the **`desktop_url`** property for GUI Sandbox, Browser Sandbox, and Filesystem Sandbox — allowing direct access to the virtual desktop via your browser.  Check our [cookbook](https://runtime.agentscope.io/en/sandbox.html#sandbox-usage) for more details.
 
 ---
 
@@ -147,24 +154,129 @@ asyncio.run(main())
 
 ### Basic Sandbox Usage Example
 
-This example demonstrates how to create sandboxed and execute tool within the sandbox.
-
-```python
-from agentscope_runtime.sandbox import BaseSandbox
-
-with BaseSandbox() as box:
-    print(box.run_ipython_cell(code="print('hi')"))
-    print(box.run_shell_command(command="echo hello"))
-```
+These examples demonstrate how to create sandboxed environments and execute tools within them, with some examples featuring interactive frontend interfaces accessible via VNC (Virtual Network Computing):
 
 > [!NOTE]
 >
 > Current version requires Docker or Kubernetes to be installed and running on your system. Please refer to [this tutorial](https://runtime.agentscope.io/en/sandbox.html) for more details.
 >
-> If pulling the Docker image fails, try setting:
-> `export RUNTIME_SANDBOX_REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"`
->
 > If you plan to use the sandbox on a large scale in production, we recommend deploying it directly in Alibaba Cloud for managed hosting: [One-click deploy sandbox on Alibaba Cloud](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83)
+
+#### Base Sandbox
+
+Use for running **Python code** or **shell commands** in an isolated environment.
+
+```python
+from agentscope_runtime.sandbox import BaseSandbox
+
+with BaseSandbox() as box:
+    # By default, pulls `agentscope/runtime-sandbox-base:latest` from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.run_ipython_cell(code="print('hi')"))  # Run Python code
+    print(box.run_shell_command(command="echo hello"))  # Run shell command
+    input("Press Enter to continue...")
+```
+
+#### GUI Sandbox
+
+Provides a **virtual desktop** environment for mouse, keyboard, and screen operations.
+
+<img src="https://img.alicdn.com/imgextra/i2/O1CN01df5SaM1xKFQP4KGBW_!!6000000006424-2-tps-2958-1802.png" alt="GUI Sandbox" width="800" height="500">
+
+```python
+from agentscope_runtime.sandbox import GuiSandbox
+
+with GuiSandbox() as box:
+    # By default, pulls `agentscope/runtime-sandbox-gui:latest` from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.desktop_url)  # Web desktop access URL
+    print(box.computer_use(action="get_cursor_position"))  # Get mouse cursor position
+    print(box.computer_use(action="get_screenshot"))       # Capture screenshot
+    input("Press Enter to continue...")
+```
+
+#### Browser Sandbox
+
+A GUI-based sandbox with **browser operations** inside an isolated sandbox.
+
+<img src="https://img.alicdn.com/imgextra/i4/O1CN01OIq1dD1gAJMcm0RFR_!!6000000004101-2-tps-2734-1684.png" alt="GUI Sandbox" width="800" height="500">
+
+```python
+from agentscope_runtime.sandbox import BrowserSandbox
+
+with BrowserSandbox() as box:
+    # By default, pulls `agentscope/runtime-sandbox-browser:latest` from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.desktop_url)  # Web desktop access URL
+    box.browser_navigate("https://www.google.com/")  # Open a webpage
+    input("Press Enter to continue...")
+```
+
+#### Filesystem Sandbox
+
+A GUI-based sandbox with **file system operations** such as creating, reading, and deleting files.
+
+<img src="https://img.alicdn.com/imgextra/i3/O1CN01VocM961vK85gWbJIy_!!6000000006153-2-tps-2730-1686.png" alt="GUI Sandbox" width="800" height="500">
+
+```python
+from agentscope_runtime.sandbox import FilesystemSandbox
+
+with FilesystemSandbox() as box:
+    # By default, pulls `agentscope/runtime-sandbox-filesystem:latest` from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.desktop_url)  # Web desktop access URL
+    box.create_directory("test")  # Create a directory
+    input("Press Enter to continue...")
+```
+
+#### Configuring Sandbox Image Registry, Namespace, and Tag
+
+##### 1. Registry
+
+If pulling images from DockerHub fails (for example, due to network restrictions), you can switch the image source to Alibaba Cloud Container Registry for faster access:
+
+```bash
+export RUNTIME_SANDBOX_REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
+```
+
+##### 2. Namespace
+
+A namespace is used to distinguish images of different teams or projects. You can customize the namespace via an environment variable:
+
+```bash
+export RUNTIME_SANDBOX_IMAGE_NAMESPACE="agentscope"
+```
+
+For example, here `agentscope` will be used as part of the image path.
+
+##### 3. Tag
+
+An image tag specifies the version of the image, for example:
+
+```bash
+export RUNTIME_SANDBOX_IMAGE_TAG="preview"
+```
+
+Details:
+
+- Default is `latest`, which means the image version matches the PyPI latest release.
+- `preview` means the latest preview version built in sync with the **GitHub main branch**.
+- You can also use a specified version number such as `20250909`. You can check all available image versions at [DockerHub](https://hub.docker.com/repositories/agentscope).
+
+##### 4. Complete Image Path
+
+The sandbox SDK will build the full image path based on the above environment variables:
+
+```bash
+<RUNTIME_SANDBOX_REGISTRY>/<RUNTIME_SANDBOX_IMAGE_NAMESPACE>/runtime-sandbox-base:<RUNTIME_SANDBOX_IMAGE_TAG>
+```
+
+Example:
+
+```bash
+agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-base:preview
+```
+
 ---
 
 ## 📚 Cookbook
@@ -330,7 +442,7 @@ limitations under the License.
 
 ## Contributors ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-13-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-14-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
@@ -356,6 +468,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/FLyLeaf-coder"><img src="https://avatars.githubusercontent.com/u/122603493?v=4?s=100" width="100px;" alt="FlyLeaf"/><br /><sub><b>FlyLeaf</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=FLyLeaf-coder" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=FLyLeaf-coder" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jinghuan-Chen"><img src="https://avatars.githubusercontent.com/u/42742857?v=4?s=100" width="100px;" alt="jinghuan-Chen"/><br /><sub><b>jinghuan-Chen</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=jinghuan-Chen" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Sodawyx"><img src="https://avatars.githubusercontent.com/u/34974468?v=4?s=100" width="100px;" alt="Yuxuan Wu"/><br /><sub><b>Yuxuan Wu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Sodawyx" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Sodawyx" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/TianYu92"><img src="https://avatars.githubusercontent.com/u/12960468?v=4?s=100" width="100px;" alt="Fear1es5"/><br /><sub><b>Fear1es5</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3ATianYu92" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>
