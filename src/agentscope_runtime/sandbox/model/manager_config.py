@@ -14,9 +14,9 @@ class SandboxManagerEnvConfig(BaseModel):
         max_length=63 - UUID_LENGTH,  # Max length for k8s pod name
     )
 
-    file_system: Literal["local", "oss", "s3"] = Field(
+    file_system: Literal["local", "oss", "s3", "minio"] = Field(
         ...,
-        description="Type of file system to use: 'local', 'oss', or 's3'.",
+        description="Type of file system to use: 'local', 'oss', 's3', or 'minio'.",
     )
     storage_folder: Optional[str] = Field(
         "",
@@ -73,7 +73,7 @@ class SandboxManagerEnvConfig(BaseModel):
     # S3 settings
     s3_endpoint_url: Optional[str] = Field(
         None,
-        description="S3 endpoint URL. Required if file_system is 's3'. For MinIO, use http://localhost:9000",
+        description="S3 endpoint URL. Required if file_system is 's3'.",
     )
     s3_access_key_id: Optional[str] = Field(
         None,
@@ -90,6 +90,28 @@ class SandboxManagerEnvConfig(BaseModel):
     s3_region_name: Optional[str] = Field(
         "us-east-1",
         description="Region name for S3. Required if file_system is 's3'.",
+    )
+    
+    # MinIO settings
+    minio_endpoint: Optional[str] = Field(
+        None,
+        description="MinIO endpoint URL. Required if file_system is 'minio'.",
+    )
+    minio_access_key: Optional[str] = Field(
+        None,
+        description="Access key for MinIO. Required if file_system is 'minio'.",
+    )
+    minio_secret_key: Optional[str] = Field(
+        None,
+        description="Secret key for MinIO. Required if file_system is 'minio'.",
+    )
+    minio_bucket_name: Optional[str] = Field(
+        None,
+        description="Bucket name in MinIO. Required if file_system is 'minio'.",
+    )
+    minio_secure: bool = Field(
+        True,
+        description="Whether to use secure connection for MinIO.",
     )
 
     # Redis settings
@@ -180,6 +202,27 @@ class SandboxManagerEnvConfig(BaseModel):
                 if not field_value:
                     raise ValueError(
                         f"{field_name} must be set when file_system is 's3'",
+                    )
+                    
+        if self.file_system == "minio":
+            required_minio_fields = [
+                self.minio_endpoint,
+                self.minio_access_key,
+                self.minio_secret_key,
+                self.minio_bucket_name,
+            ]
+            for field_name, field_value in zip(
+                    [
+                        "minio_endpoint",
+                        "minio_access_key",
+                        "minio_secret_key",
+                        "minio_bucket_name",
+                    ],
+                    required_minio_fields,
+            ):
+                if not field_value:
+                    raise ValueError(
+                        f"{field_name} must be set when file_system is 'minio'",
                     )
 
         if self.redis_enabled:

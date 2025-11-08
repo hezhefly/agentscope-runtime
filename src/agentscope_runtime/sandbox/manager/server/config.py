@@ -39,20 +39,25 @@ class Settings(BaseSettings):
     REDIS_CONTAINER_POOL_KEY: str = "_runtime_sandbox_container_container_pool"
 
     # OSS settings
-    FILE_SYSTEM: Literal["local", "oss", "s3"] = "local"
+    FILE_SYSTEM: Literal["local", "oss", "s3", "minio"] = "local"
     OSS_ENDPOINT: str = "http://oss-cn-hangzhou.aliyuncs.com"
     OSS_ACCESS_KEY_ID: str = "your-access-key-id"
     OSS_ACCESS_KEY_SECRET: str = "your-access-key-secret"
     OSS_BUCKET_NAME: str = "your-bucket-name"
 
     # S3 settings
-    S3_ENDPOINT_URL: Optional[str] = (
-        None  # your-endpoint-url, like http://localhost:9000
-    )
+    S3_ENDPOINT_URL: Optional[str] = None
     S3_ACCESS_KEY_ID: str = "your-access-key-id"
     S3_ACCESS_KEY_SECRET: str = "your-access-key-secret"
     S3_BUCKET_NAME: str = "your-bucket-name"
     S3_REGION_NAME: str = "us-east-1"
+    
+    # MinIO settings
+    MINIO_ENDPOINT: Optional[str] = None
+    MINIO_ACCESS_KEY: str = "your-access-key"
+    MINIO_SECRET_KEY: str = "your-secret-key"
+    MINIO_BUCKET_NAME: str = "your-bucket-name"
+    MINIO_SECURE: bool = True
 
     # K8S settings
     K8S_NAMESPACE: str = "default"

@@ -178,6 +178,16 @@ class SandboxManager:
                 self.config.s3_bucket_name,
                 self.config.s3_region_name,
             )
+        elif self.file_system == "minio":
+            from .storage.minio_storage import MinioStorage
+
+            self.storage = MinioStorage(
+                self.config.minio_access_key,
+                self.config.minio_secret_key,
+                self.config.minio_endpoint,
+                self.config.minio_bucket_name,
+                self.config.minio_secure,
+            )
         else:
             self.storage = LocalStorage()
 

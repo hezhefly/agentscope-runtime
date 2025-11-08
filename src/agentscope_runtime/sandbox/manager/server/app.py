@@ -154,6 +154,11 @@ def get_config() -> SandboxManagerEnvConfig:
             s3_access_key_secret=settings.S3_ACCESS_KEY_SECRET,
             s3_bucket_name=settings.S3_BUCKET_NAME,
             s3_region_name=settings.S3_REGION_NAME,
+            minio_endpoint=settings.MINIO_ENDPOINT,
+            minio_access_key=settings.MINIO_ACCESS_KEY,
+            minio_secret_key=settings.MINIO_SECRET_KEY,
+            minio_bucket_name=settings.MINIO_BUCKET_NAME,
+            minio_secure=settings.MINIO_SECURE,
         )
     return _config
 

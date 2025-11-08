@@ -104,7 +104,7 @@ class Runner:
         self._deploy_managers[deploy_manager.deploy_id] = deploy_result
         return deploy_result
 
-    @trace(TraceType.AGENT_STEP)
+    # @trace(TraceType.AGENT_STEP)
     async def stream_query(  # pylint:disable=unused-argument
         self,
         request: AgentRequest,
