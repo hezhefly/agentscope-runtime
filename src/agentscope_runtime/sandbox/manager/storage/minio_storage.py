@@ -18,9 +18,9 @@ def calculate_md5(file_path):
 class MinioStorage(DataStorage):
     def __init__(
         self,
-        endpoint,
         access_key,
         secret_key,
+        endpoint,
         bucket_name,
         secure=True,
     ):

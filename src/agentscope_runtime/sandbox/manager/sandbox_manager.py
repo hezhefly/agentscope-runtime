@@ -433,10 +433,12 @@ class SandboxManager:
             if self.default_mount_dir:
                 mount_dir = os.path.join(self.default_mount_dir, session_id)
                 os.makedirs(mount_dir, exist_ok=True)
-
+        
+        # 需要通过该参数来完成指定路径的挂载功能
         if mount_dir:
             if not os.path.isabs(mount_dir):
                 mount_dir = os.path.abspath(mount_dir)
+            os.makedirs(mount_dir, exist_ok=True) # 增加一个远程指定目录后，新建目录的功能
 
         if storage_path is None:
             if self.storage_folder:
