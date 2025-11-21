@@ -315,11 +315,13 @@ class SandboxManager:
                 )
 
     @remote_wrapper()
-    def create_from_pool(self, sandbox_type=None):
+    def create_from_pool(self, sandbox_type=None, mount_dir=None):
         """Try to get a container from runtime pool"""
         sandbox_type = SandboxType(sandbox_type)
         if sandbox_type != self.default_type:
-            return self.create(sandbox_type=sandbox_type.value)
+            return self.create(sandbox_type=sandbox_type.value, mount_dir=mount_dir)
+        if mount_dir:
+            return self.create(mount_dir=mount_dir)
 
         cnt = 0
         try:
@@ -442,10 +444,20 @@ class SandboxManager:
 
         if storage_path is None:
             if self.storage_folder:
-                storage_path = self.storage.path_join(
-                    self.storage_folder,
-                    session_id,
-                )
+                # 如果提供了自定义mount_dir，从mount_dir中提取一个标识作为storage_path的一部分
+                # 这样可以保证mount_dir和storage_path之间有某种关联
+                if mount_dir:
+                    # 从mount_dir中提取最后一部分作为标识
+                    dir_name = os.path.basename(mount_dir)
+                    storage_path = self.storage.path_join(
+                        self.storage_folder,
+                        dir_name or session_id,
+                    )
+                else:
+                    storage_path = self.storage.path_join(
+                        self.storage_folder,
+                        session_id,
+                    )
 
         if mount_dir and storage_path:
             self.storage.download_folder(storage_path, mount_dir)
