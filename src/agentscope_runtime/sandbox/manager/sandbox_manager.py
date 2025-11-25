@@ -314,14 +314,14 @@ class SandboxManager:
                     f"Error cleaning up container {key}: {e}",
                 )
 
-    @remote_wrapper()
+    @remote_wrapper(method="POST")
     def create_from_pool(self, sandbox_type=None, mount_dir=None):
         """Try to get a container from runtime pool"""
         sandbox_type = SandboxType(sandbox_type)
         if sandbox_type != self.default_type:
             return self.create(sandbox_type=sandbox_type.value, mount_dir=mount_dir)
         if mount_dir:
-            return self.create(mount_dir=mount_dir)
+            return self.create(sandbox_type=sandbox_type.value, mount_dir=mount_dir)
 
         cnt = 0
         try:
@@ -413,6 +413,18 @@ class SandboxManager:
 
         # TODO: enable for timeout for the sandbox (auto cleanup)
         config = SandboxRegistry.get_config_by_type(target_sandbox_type)
+        if config is None:
+            logger.error(
+                f"No configuration found for sandbox type {target_sandbox_type}"
+            )
+            config = SandboxConfig(
+                image_name=image,
+                sandbox_type=target_sandbox_type,
+                resource_limits={},
+                runtime_config={},
+            )
+        if config.runtime_config is None:
+            config.runtime_config = {}
         config.runtime_config["network"] = self.config.network
 
         environment = {
@@ -435,12 +447,14 @@ class SandboxManager:
             if self.default_mount_dir:
                 mount_dir = os.path.join(self.default_mount_dir, session_id)
                 os.makedirs(mount_dir, exist_ok=True)
-        
+
         # 需要通过该参数来完成指定路径的挂载功能
         if mount_dir:
             if not os.path.isabs(mount_dir):
                 mount_dir = os.path.abspath(mount_dir)
-            os.makedirs(mount_dir, exist_ok=True) # 增加一个远程指定目录后，新建目录的功能
+            os.makedirs(
+                mount_dir, exist_ok=True
+            )  # 增加一个远程指定目录后，新建目录的功能
 
         if storage_path is None:
             if self.storage_folder:
