@@ -19,7 +19,7 @@ from ..model import (
     SandboxManagerEnvConfig,
 )
 from ..enums import SandboxType
-from ..registry import SandboxRegistry
+from ..registry import SandboxRegistry, SandboxConfig
 from ..client import SandboxHttpClient, TrainingSandboxClient
 
 from ..manager.collections import (
